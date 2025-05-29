@@ -17,7 +17,8 @@ export interface Donation extends Document {
   newsletter: boolean;
   receipt80G: boolean;
   panCard: string;
-  transactionID:string;
+  order_id: string;
+  transactionID: string;
   cheque_or_dd_number: string;
   transferReceipt: string;
   status: 'pending' | 'failed' | 'success';
@@ -44,6 +45,8 @@ const DonationSchema: Schema = new Schema({
     type: String,
     enum: ['pending', 'failed', 'success'],
     default: 'pending',
+    required: true,
+    trim: true,
   },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
@@ -68,7 +71,8 @@ const DonationSchema: Schema = new Schema({
       message: 'PAN Card is required when receipt80G is true.',
     },
   },
-  transactionID:{ type: String, required: false },
+  order_id: { type: String, required: false },
+  transactionID: { type: String, required: false },
   cheque_or_dd_number: { type: String, required: false },
   transferReceipt: { type: String, required: false },
 }, {

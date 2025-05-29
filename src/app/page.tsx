@@ -80,7 +80,6 @@ const DonationForm: React.FC = () => {
   ]
 
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -151,70 +150,71 @@ const DonationForm: React.FC = () => {
     setFormData(prev => ({ ...prev, cheque_or_dd_number: number }));
   }
 
-   const handlePayment = async () => {
-    const res = await fetch('/api/phonepe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: 100, // ₹1.00
-        mobileNumber: '9754159491',
-      }),
-    });
-
-    const data = await res.json();
-
-    const redirectUrl = data?.data?.instrumentResponse?.redirectInfo?.url;
-    if (redirectUrl) {
-      window.location.href = redirectUrl;
-    } else {
-      alert('Payment failed: ' + data?.message || 'Unknown error');
-    }
-  };
-
   const handleSubmit = async () => {
-    // if (!validateForm()) return;
+    if (!validateForm()) return;
 
-    // setIsSubmitting(true);
+    setIsSubmitting(true);
 
     try {
-      // Create FormData object
-      // const formDataToSend = new FormData();
+      //Create FormData object
+      const formDataToSend = new FormData();
 
-      // Object.keys(formData).forEach((key) => {
-      //   const typedKey = key as keyof typeof formData;
-      //   const value = formData[typedKey];
+      Object.keys(formData).forEach((key) => {
+        const typedKey = key as keyof typeof formData;
+        const value = formData[typedKey];
 
-      //   if (value === null || value === undefined) return;
+        if (value === null || value === undefined) return;
 
-      //   // Handle File or File[]
-      //   if (value instanceof File) {
-      //     formDataToSend.append(key, value);
-      //   } else if (Array.isArray(value)) {
-      //     value.forEach((item) => {
-      //       formDataToSend.append(key, item as string | Blob);
-      //     });
-      //   } else {
-      //     formDataToSend.append(key, value.toString());
-      //   }
-      // });
+        // Handle File or File[]
+        if (value instanceof File) {
+          formDataToSend.append(key, value);
+        } else if (Array.isArray(value)) {
+          value.forEach((item) => {
+            formDataToSend.append(key, item as string | Blob);
+          });
+        } else {
+          formDataToSend.append(key, value.toString());
+        }
+      });
 
-     await handlePayment()
+      // Make API call
+      const response = await fetch('/api/donation', {
+        method: 'POST',
+        body: formDataToSend,
+        // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
+      });
 
-      // // Make API call
-      // const response = await fetch('/api/donation', {
-      //   method: 'POST',
-      //   body: formDataToSend,
-      //   // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
-      // });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`);
-      // }
+      const result = await response.json();
 
-      // const result = await response.json();
-      // console.log('Success:', result);
+      if (formData.paymentMethod === "online") {
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!, // add this to .env
+          amount: result.amount,
+          currency: result.currency,
+          name: 'Newlife Welfare Foundation',
+          description: 'Donation',
+          order_id: result.id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          handler: function (response: any) {
+            alert('Payment successful: ' + response.razorpay_payment_id);
+            // optionally call a success API
+          },
+          prefill: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            contact: formData.phone,
+          },
+        };
 
-      // setSubmitted(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const razorpay = new (window as any).Razorpay(options);
+        razorpay.open();
+      }
+
 
     } catch (error) {
       console.error('Error submitting form:', error);
