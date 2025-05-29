@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
       const paymentId = event.payload.payment.entity.id;
       const orderId = event.payload.payment.entity.notes?.order_id;
 
+      console.log("Ecvent.payload" , event.payload.payment)
+
       if (!orderId) {
         return new Response(JSON.stringify({ error: 'Order ID missing' }), { status: 400 });
       }
